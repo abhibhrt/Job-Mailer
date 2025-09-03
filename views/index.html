@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bulk Emailer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Bulk Emailer</h1>
+            <div class="gradient-bar"></div>
+            <p class="subtitle">Upload Excel + Resume → personalized emails to HRs via Gmail.
+                <span>Columns: A=Company, B=HR, C=Email • Row 1=header</span>
+            </p>
+        </header>
+
+        <main class="main-content">
+            <div class="card">
+                <form id="bulkForm" class="form">
+                    <div class="card-upper">
+                        <div class="form-group">
+                            <label class="form-label">Upload Excel (.xlsx)</label>
+                            <div class="file-input-container">
+                                <input type="file" name="file" accept=".xlsx" required class="file-input" />
+                                <span class="file-input-label">Choose file</span>
+                                <span class="file-input-name">No file chosen</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Upload Resume (PDF)</label>
+                            <div class="file-input-container">
+                                <input type="file" name="resume" accept=".pdf" required class="file-input" />
+                                <span class="file-input-label">Choose file</span>
+                                <span class="file-input-name">No file chosen</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group">
+                            <label class="form-label">Subject</label>
+                            <input id="subject" type="text" name="subject"
+                                placeholder="Application for SDE at {{company}}" required class="form-input" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Delay (ms)</label>
+                            <input type="number" name="delayMs" value="200" min="0" class="form-input" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Email Body</label>
+                        <textarea id="body" name="body" rows="10"
+                            placeholder="Dear HR,&#10;&#10;I am Abhishek Bharti, a recent Computer Science graduate from IIIT Bhopal and currently interning at Walkover. With 2 years of hands-on MERN stack development experience, along with strong foundations in DSA, DBMS, OOPs, and System Design, I am eager to contribute to impactful projects at {{company}}.&#10;&#10;I bring a strong problem-solving mindset, adaptability, and a proven track record of delivering efficient solutions.&#10;&#10;Best regards,&#10;Abhishek Bharti&#10;Email:&#10;Phone:&#10;Portfolio:"
+                            class="form-textarea"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" type="submit">
+                            <span class="btn-text">Send Emails</span>
+                            <div class="btn-loader">
+                                <div class="loader"></div>
+                            </div>
+                        </button>
+                        <button id="useSample" class="btn btn-secondary" type="button">Use Sample Data</button>
+                    </div>
+                </form>
+
+                <div id="result" class="result-container"></div>
+
+                <div class="example-section">
+                    <h3 class="example-title">Excel Format</h3>
+                    <table class="example-table" border="1" cellpadding="6" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Email</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Company-1</td>
+                                <td>hr1@company.com</td>
+                            </tr>
+                            <tr>
+                                <td>Company-2</td>
+                                <td>hr2@company.com</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('bulkForm');
+        const result = document.getElementById('result');
+        const subjectField = document.getElementById('subject');
+        const bodyField = document.getElementById('body');
+        const useSampleBtn = document.getElementById('useSample');
+        const fileInputs = document.querySelectorAll('.file-input');
+        const fileInputNames = document.querySelectorAll('.file-input-name');
+        const submitBtn = form.querySelector('.btn-primary');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const btnLoader = submitBtn.querySelector('.btn-loader');
+
+        // Update file input names
+        fileInputs.forEach((input, index) => {
+            input.addEventListener('change', () => {
+                fileInputNames[index].textContent = input.files.length > 0
+                    ? input.files[0].name
+                    : 'No file chosen';
+            });
+        });
+
+        useSampleBtn.addEventListener('click', () => {
+            subjectField.value = "Application for SDE at {{company}}";
+            bodyField.value = `Dear HR,\n\nI am Abhishek Bharti, a recent Computer Science graduate from IIIT Bhopal and currently interning at Walkover.\nWith 2 years of hands-on MERN stack development experience, along with strong foundations in DSA, DBMS, OOPs, and System Design, I am eager to contribute to impactful projects at {{company}}.\n\nI bring a strong problem-solving mindset, adaptability, and a proven track record of delivering efficient solutions.\n\nBest regards,\nAbhishek Bharti\nEmail:\nPhone:\nPortfolio:`;
+
+            // Add animation effect
+            subjectField.classList.add('field-highlight');
+            bodyField.classList.add('field-highlight');
+
+            setTimeout(() => {
+                subjectField.classList.remove('field-highlight');
+                bodyField.classList.remove('field-highlight');
+            }, 1500);
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(form);
+
+            // Show loading state
+            btnText.textContent = 'Sending...';
+            btnLoader.style.display = 'block';
+            submitBtn.disabled = true;
+
+            result.innerHTML = '<div class="result-message result-pending">Sending emails… please wait</div>';
+
+            try {
+                const res = await fetch('/send-bulk', { method: 'POST', body: fd });
+                const data = await res.json();
+
+                if (data.ok) {
+                    result.innerHTML = `<div class="result-message result-success">✅ Sent: ${data.success}/${data.total} • ❌ Failed: ${data.errors}</div>`;
+                } else {
+                    result.innerHTML = `<div class="result-message result-error">❌ Error: ${data.error}</div>`;
+                }
+            } catch (err) {
+                result.innerHTML = `<div class="result-message result-error">❌ Error: ${err.message}</div>`;
+            } finally {
+                btnText.textContent = 'Send Emails';
+                btnLoader.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
