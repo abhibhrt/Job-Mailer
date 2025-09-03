@@ -28,8 +28,8 @@ app.get('/', (_req, res) => {
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'abhibharti365@gmail.com',
-    pass: 'iftr glgt qxyd ykbj', // App password
+    user: process.env.EMAIL_ID,
+    pass: process.env.APP_PASSWORD,
   },
   pool: true,
   maxConnections: 5,
@@ -66,7 +66,7 @@ app.post(
       // Remove temp excel file
       fs.unlink(excelFile.path, () => {});
 
-      const dataRows = rows.slice(1); // Skip header row
+      const dataRows = rows.slice(1);
       const results = [];
       let successCount = 0;
       let errorCount = 0;
